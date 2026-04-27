@@ -171,9 +171,10 @@ const DATA = [
     "nama": "SDN WRINGINANOM 4 KURIPAN",
     "kec": "Kuripan",
     "kat": "Sekolah",
-    "tim": "-",
+    "tim": "DENI",
     "lat": -7.86919783521017,
-    "lng": 113.088113947501
+    "lng": 113.088113947501,
+    "color": "red"   // ← tambah ini
   },
   {
     "nama": "SMP ISLAM NURUL HIDAYAH",
@@ -259,9 +260,10 @@ const DATA = [
     "nama": "SMP DARUL AKHLAQ",
     "kec": "Sumberasih",
     "kat": "Sekolah",
-    "tim": "-",
+    "tim": "JAKI",
     "lat": -7.76641701188497,
-    "lng": 113.143108216378
+    "lng": 113.143108216378,
+    "color": "red"   // ← tambah ini
   },
   {
     "nama": "SDN WRINGINANOM 4 TONGAS",
@@ -275,9 +277,10 @@ const DATA = [
     "nama": "SMPN 2 TONGAS",
     "kec": "Tongas",
     "kat": "Sekolah",
-    "tim": "-",
+    "tim": "DENI",
     "lat": -7.74823863642543,
-    "lng": 113.063859265612
+    "lng": 113.063859265612,
+    "color": "red"   // ← tambah ini
   },
   {
     "nama": "SMPN 4 TONGAS SATAP",
@@ -285,15 +288,17 @@ const DATA = [
     "kat": "Sekolah",
     "tim": "-",
     "lat": -7.74106744000183,
-    "lng": 113.082585152121
+    "lng": 113.082585152121,
+    "color": "red"   // ← tambah ini
   },
   {
     "nama": "SDN KARENG KIDUL",
     "kec": "Wonomerto",
     "kat": "Sekolah",
-    "tim": "-",
+    "tim": "JAKI",
     "lat": -7.81867478123796,
-    "lng": 113.194831280958
+    "lng": 113.194831280958,
+    "color": "red"   // ← tambah ini
   },
   {
     "nama": "SDN BESUK 2",
@@ -491,41 +496,46 @@ const DATA = [
     "nama": "SMP AL KAHAIRIYAH",
     "kec": "Kraksaan",
     "kat": "Sekolah",
-    "tim": "-",
+    "tim": "FAJAR",
     "lat": -7.73147554063573,
-    "lng": 113.445890338077
+    "lng": 113.445890338077,
+    "color": "red"   // ← tambah ini
   },
   {
     "nama": "SMPN 1 KRAKSAAN",
     "kec": "Kraksaan",
     "kat": "Sekolah",
-    "tim": "-",
+    "tim": "FAJAR",
     "lat": -7.76452436102902,
-    "lng": 113.424225480957
+    "lng": 113.424225480957,
+    "color": "red"   // ← tambah ini
   },
   {
     "nama": "SMPN 2 KRAKSAAN",
     "kec": "Kraksaan",
     "kat": "Sekolah",
-    "tim": "-",
+    "tim": "RIDHO",
     "lat": -7.75890051883412,
-    "lng": 113.413754880957
+    "lng": 113.413754880957,
+    "color": "red"   // ← tambah ini
   },
   {
     "nama": "SMPN 3 KRAKSAAN",
     "kec": "Kraksaan",
     "kat": "Sekolah",
-    "tim": "-",
+    "tim": "RIDHO",
     "lat": -7.76743531474915,
-    "lng": 113.460135696303
+    "lng": 113.460135696303,
+    "color": "red"   // ← tambah ini
   },
   {
     "nama": "SMPN 4 KRAKSAAN",
     "kec": "Kraksaan",
     "kat": "Sekolah",
-    "tim": "-",
+    "tim": "RIDHO",
     "lat": -7.74467767997898,
-    "lng": 113.457030336775
+    "lng": 113.457030336775,
+    "color": "red"   // ← tambah ini
   },
   {
     "nama": "SMPN 2 KREJENGAN",
@@ -638,6 +648,30 @@ const DATA = [
     "tim": "-",
     "lat": -7.96866946303032,
     "lng": 113.397105406089
+  },
+  {
+    "nama": "SMP NEGERI 1 BESUK",
+    "kec": "Besuk",
+    "kat": "Sekolah",
+    "tim": "-",
+    "lat":  -7.785100000000,
+    "lng": 113.477100000000
+  },
+  {
+    "nama": "SMP NEGERI 1 KREJENGAN",
+    "kec": "Krejengan",
+    "kat": "Sekolah",
+    "tim": "-",
+    "lat": -7.791500000000,
+    "lng": 113.406600000000
+  },
+  {
+    "nama": "SD NEGERI KEDUNGSUMUR",
+    "kec": "Pakuniran",
+    "kat": "Sekolah",
+    "tim": "-",
+    "lat": -7.853800,
+    "lng": 113.518600
   }
 ];
 // ============================================================
@@ -645,8 +679,8 @@ const DATA = [
 const COLORS  = { "Sekolah":"#378ADD", "Penginapan":"#3B6D11", "Posko Tim":"#D85A30" };
 const BADGES  = { "Sekolah":"badge-school", "Penginapan":"badge-nginap", "Posko Tim":"badge-posko" };
 
-function pinIcon(kat) {
-  const c = COLORS[kat] || "#888";
+function pinIcon(kat, customColor) {
+  const c = customColor || COLORS[kat] || "#888";
   const svg = encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="38" viewBox="0 0 30 38">
       <path fill="${c}" stroke="white" stroke-width="1.5" d="M15 0C7.27 0 1 6.27 1 14c0 10 14 24 14 24S29 24 29 14C29 6.27 22.73 0 15 0z"/>
@@ -762,7 +796,7 @@ function render(filterKec, filterSearch) {
     const q = (filterSearch||"").toLowerCase();
     const matchSearch = !q || d.nama.toLowerCase().includes(q) || d.kec.toLowerCase().includes(q) || d.kat.toLowerCase().includes(q);
     if (!matchKec || !matchSearch) return;
-    const m = L.marker([d.lat, d.lng], { icon: pinIcon(d.kat) })
+    const m = L.marker([d.lat, d.lng], { icon: pinIcon(d.kat, d.color || null) })
       .addTo(map)
       .bindPopup(popupHTML(d), { maxWidth: 260 });
     activeMarkers.push(m);
