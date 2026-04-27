@@ -6,22 +6,16 @@
 <title>Peta Distribusi Tim — Kab. Probolinggo</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', sans-serif; background: #f5f5f0; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
 
   /* ── HEADER ── */
   header {
-    background: #0f3460;
-    color: white;
-    padding: 10px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    gap: 8px;
-    z-index: 1000;
+    background: #0f3460; color: white; padding: 10px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3); gap: 8px; z-index: 1000;
   }
   .header-left { min-width: 0; }
   header h1 { font-size: 14px; font-weight: 600; letter-spacing: 0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -37,37 +31,19 @@
 
   /* ── SIDEBAR desktop ── */
   #sidebar {
-    width: 240px;
-    background: white;
-    border-right: 1px solid #e5e5e5;
-    overflow-y: auto;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.3s ease;
-    z-index: 500;
+    width: 240px; background: white; border-right: 1px solid #e5e5e5;
+    overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column;
+    transition: transform 0.3s ease; z-index: 500;
   }
 
   .sidebar-section { padding: 12px 12px 10px; border-bottom: 1px solid #f0f0f0; }
   .sidebar-section h3 { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: #888; margin-bottom: 8px; }
 
-  #search-input {
-    width: 100%;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 7px 10px;
-    font-size: 13px;
-    outline: none;
-    transition: border-color 0.15s;
-  }
+  #search-input { width: 100%; border: 1px solid #ddd; border-radius: 6px; padding: 7px 10px; font-size: 13px; outline: none; transition: border-color 0.15s; }
   #search-input:focus { border-color: #378ADD; }
 
   /* Legenda collapsible */
-  .legend-toggle {
-    display: flex; align-items: center; justify-content: space-between;
-    cursor: pointer; user-select: none;
-    margin-bottom: 0;
-  }
+  .legend-toggle { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; margin-bottom: 0; }
   .legend-toggle h3 { margin-bottom: 0; }
   .legend-arrow { font-size: 10px; color: #aaa; transition: transform 0.2s; }
   .legend-arrow.open { transform: rotate(180deg); }
@@ -79,11 +55,8 @@
 
   /* Kecamatan filter */
   .kec-btn {
-    display: block; width: 100%; text-align: left;
-    font-size: 12px; color: #333; background: transparent;
-    border: 1px solid #e5e5e5; border-radius: 6px;
-    padding: 6px 10px; cursor: pointer; margin-bottom: 4px;
-    transition: all 0.15s;
+    display: block; width: 100%; text-align: left; font-size: 12px; color: #333; background: transparent;
+    border: 1px solid #e5e5e5; border-radius: 6px; padding: 6px 10px; cursor: pointer; margin-bottom: 4px; transition: all 0.15s;
   }
   .kec-btn:hover { background: #f0f6ff; border-color: #b3d0f5; }
   .kec-btn.active { background: #e6f1fb; color: #185FA5; border-color: #378ADD; font-weight: 600; }
@@ -105,56 +78,28 @@
   .popup-row b { color: #333; }
 
   /* ── BOTTOM BAR desktop ── */
-  #bottom-bar {
-    background: white; border-top: 1px solid #e5e5e5;
-    padding: 6px 16px; font-size: 11px; color: #888;
-    flex-shrink: 0;
-  }
+  #bottom-bar { background: white; border-top: 1px solid #e5e5e5; padding: 6px 16px; font-size: 11px; color: #888; flex-shrink: 0; }
 
   /* ── MOBILE FAB & DRAWER ── */
-  #fab-menu {
-    display: none;
-    position: fixed; bottom: 20px; right: 16px;
-    z-index: 2000;
-    flex-direction: column; align-items: flex-end; gap: 10px;
-  }
+  #fab-menu { display: none; position: fixed; bottom: 20px; right: 16px; z-index: 2000; flex-direction: column; align-items: flex-end; gap: 10px; }
   .fab-btn {
-    width: 48px; height: 48px; border-radius: 50%;
-    background: #0f3460; color: white; border: none;
-    font-size: 20px; cursor: pointer; display: flex;
-    align-items: center; justify-content: center;
-    box-shadow: 0 3px 12px rgba(0,0,0,0.35);
-    transition: background 0.15s, transform 0.15s;
+    width: 48px; height: 48px; border-radius: 50%; background: #0f3460; color: white; border: none; font-size: 20px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 12px rgba(0,0,0,0.35); transition: background 0.15s, transform 0.15s;
   }
   .fab-btn:active { transform: scale(0.93); }
-  .fab-btn.red { background: #c0392b; }
 
   /* Mobile drawer (bottom sheet) */
   #drawer {
-    display: none;
-    position: fixed; bottom: 0; left: 0; right: 0;
-    background: white; border-radius: 18px 18px 0 0;
-    box-shadow: 0 -4px 24px rgba(0,0,0,0.18);
-    z-index: 1900;
-    max-height: 72dvh;
-    transform: translateY(100%);
-    transition: transform 0.3s cubic-bezier(.4,0,.2,1);
-    overflow: hidden;
-    flex-direction: column;
+    display: none; position: fixed; bottom: 0; left: 0; right: 0; background: white; border-radius: 18px 18px 0 0;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.18); z-index: 1900; max-height: 72dvh; transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(.4,0,.2,1); overflow: hidden; flex-direction: column;
   }
   #drawer.open { transform: translateY(0); }
-  #drawer-handle {
-    width: 40px; height: 4px; background: #ddd;
-    border-radius: 2px; margin: 10px auto 0;
-    cursor: pointer; flex-shrink: 0;
-  }
+  #drawer-handle { width: 40px; height: 4px; background: #ddd; border-radius: 2px; margin: 10px auto 0; cursor: pointer; flex-shrink: 0; }
   #drawer-inner { overflow-y: auto; padding: 12px 14px 28px; flex: 1; }
 
   /* Overlay */
-  #overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.35); z-index: 1800;
-  }
+  #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 1800; }
   #overlay.show { display: block; }
 
   /* ── RESPONSIVE ── */
@@ -164,7 +109,6 @@
     .hstat-num { font-size: 16px; }
     .hstat-lbl { font-size: 8px; }
     .header-stats { gap: 10px; }
-
     #sidebar { display: none; }
     #bottom-bar { display: none; }
     #fab-menu { display: flex; }
@@ -188,7 +132,6 @@
 </header>
 
 <div id="main">
-  <!-- SIDEBAR (desktop) -->
   <div id="sidebar">
     <div class="sidebar-section">
       <h3>Cari Lokasi</h3>
@@ -218,18 +161,15 @@
 </div>
 
 <div id="bottom-bar">
-  Klik marker untuk detail lokasi &nbsp;•&nbsp; Edit data di bagian <code>DATA</code> dalam file ini
+  Klik marker untuk detail lokasi &nbsp;•&nbsp; Data sinkron otomatis dari Google Sheets
 </div>
 
-<!-- MOBILE FAB -->
 <div id="fab-menu">
   <button class="fab-btn" id="fab-main" onclick="openDrawer()" title="Filter & Legenda">☰</button>
 </div>
 
-<!-- OVERLAY -->
 <div id="overlay" onclick="closeDrawer()"></div>
 
-<!-- MOBILE DRAWER (bottom sheet) -->
 <div id="drawer">
   <div id="drawer-handle" onclick="closeDrawer()"></div>
   <div id="drawer-inner">
@@ -239,7 +179,6 @@
         style="width:100%;border:1px solid #ddd;border-radius:6px;padding:8px 10px;font-size:14px;outline:none" />
     </div>
 
-    <!-- Legenda mobile collapsible -->
     <div style="margin-bottom:12px;border:1px solid #f0f0f0;border-radius:8px;overflow:hidden">
       <div onclick="toggleLegendMobile()" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;background:#fafafa">
         <span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:#888">Legenda</span>
@@ -262,548 +201,55 @@
 
 <script>
 // ============================================================
-// DATA — tambah/edit sekolah di sini
-// Untuk warna custom, tambahkan field "color": "red" (dll)
-// Warna tersedia: red, blue, green, orange, purple, darkred,
-//   darkblue, darkgreen, cadetblue, pink, black, gray, white
+// DATA DINAMIS DARI GOOGLE SHEETS
 // ============================================================
-const DATA = [
-  {
-    "nama": "SDN KARANGREJO 1",
-    "kec": "Kuripan",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.9004,
-    "lng": 113.1034
-  },
-  {
-    "nama": "SDN WRINGINANOM 3 KURIPAN",
-    "kec": "Kuripan",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.75401027758124,
-    "lng": 113.105419436775
-  },
-  {
-    "nama": "SDN WRINGINANOM 4 KURIPAN",
-    "kec": "Kuripan",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.86919783521017,
-    "lng": 113.088113947501    
-  },
-  {
-    "nama": "SMP ISLAM NURUL HIDAYAH",
-    "kec": "Kuripan",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.87825338596133,
-    "lng": 113.150149714166
-  },
-  {
-    "nama": "SMPN 1 KURIPAN",
-    "kec": "Kuripan",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.87973657438633,
-    "lng": 113.138340745877
-  },
-  {
-    "nama": "SMPN 3 KURIPAN SATAP",
-    "kec": "Kuripan",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.94136615102805,
-    "lng": 113.174766294451
-  },
-  {
-    "nama": "SMPN 1 SUKAPURA",
-    "kec": "Sukapura",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.89541177666644,
-    "lng": 113.04701806376
-  },
-  {
-    "nama": "SMPN 2 SUKAPURA",
-    "kec": "Sukapura",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.86848727794232,
-    "lng": 113.065357561368
-  },
-  {
-    "nama": "SMPN 3 SUKAPURA SATAP",
-    "kec": "Sukapura",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.86448711109203,
-    "lng": 113.049402238879
-  },
-  {
-    "nama": "SMPN 4 SUKAPURA SATAP",
-    "kec": "Sukapura",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.91716066500293,
-    "lng": 113.054996446375
-  },
-  {
-    "nama": "SDN GEMITO 1",
-    "kec": "Sumber",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.92937034076404,
-    "lng": 113.092418794451
-  },
-  {
-    "nama": "SDN LEDOKOMBO 2",
-    "kec": "Sumber",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.97708619163907,
-    "lng": 113.04335215027
-  },
-  {
-    "nama": "SMPN 1 SUMBER",
-    "kec": "Sumber",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.94161656587079,
-    "lng": 113.11514548096
-  },
-  {
-    "nama": "SMP DARUL AKHLAQ",
-    "kec": "Sumberasih",
-    "kat": "Sekolah",
-    "tim": "JAKI",
-    "lat": -7.76641701188497,
-    "lng": 113.143108216378,
-    "color": "red"
-  },
-  {
-    "nama": "SDN WRINGINANOM 4 TONGAS",
-    "kec": "Tongas",
-    "kat": "Sekolah",
-    "tim": "DENI",
-    "lat": -7.77019057671605,
-    "lng": 113.103847965612,
-    "color": "red"
-  },
-  {
-    "nama": "SMPN 2 TONGAS",
-    "kec": "Tongas",
-    "kat": "Sekolah",
-    "tim": "DENI",
-    "lat": -7.74823863642543,
-    "lng": 113.063859265612,
-    "color": "red"
-  },
-  {
-    "nama": "SMPN 4 TONGAS SATAP",
-    "kec": "Tongas",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.74106744000183,
-    "lng": 113.082585152121,
-    "color": "red"
-  },
-  {
-    "nama": "SDN KARENG KIDUL",
-    "kec": "Wonomerto",
-    "kat": "Sekolah",
-    "tim": "JAKI",
-    "lat": -7.81867478123796,
-    "lng": 113.194831280958,
-    "color": "red"
-  },
-  {
-    "nama": "SDN BESUK 2",
-    "kec": "Bantaran",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.85436854398412,
-    "lng": 113.193630338632
-  },
-  {
-    "nama": "SDN KRAMATAGUNG 1",
-    "kec": "Bantaran",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.84157536497853,
-    "lng": 113.204215023286
-  },
-  {
-    "nama": "SDN LEGUNDI 2",
-    "kec": "Bantaran",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.86896938037575,
-    "lng": 113.157092963759
-  },
-  {
-    "nama": "SMPN 1 BANTARAN",
-    "kec": "Bantaran",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.8442130646205,
-    "lng": 113.178549623286
-  },
-  {
-    "nama": "SDN LIPRAK KULON 1",
-    "kec": "Banyuanyar",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.8586317184208,
-    "lng": 113.302129723286
-  },
-  {
-    "nama": "SMP ISLAM ADDASUQI",
-    "kec": "Banyuanyar",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.82799289966003,
-    "lng": 113.300551850268
-  },
-  {
-    "nama": "SMPN 1 BANYUANYAR",
-    "kec": "Banyuanyar",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.84083146393257,
-    "lng": 113.326540107941
-  },
-  {
-    "nama": "SMPN 2 BANYUANYAR",
-    "kec": "Banyuanyar",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.87086509246909,
-    "lng": 113.300029867468
-  },
-  {
-    "nama": "SMPN 1 GENDING",
-    "kec": "Gending",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.79429083852739,
-    "lng": 113.31926569074
-  },
-  {
-    "nama": "SMPN 2 LECES",
-    "kec": "Leces",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.87099806284997,
-    "lng": 113.249116775881
-  },
-  {
-    "nama": "SDN PUSPAN 1",
-    "kec": "Maron",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.82086724047792,
-    "lng": 113.363685979104
-  },
-  {
-    "nama": "SDN SUMBERDAWE",
-    "kec": "Maron",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.87053799231843,
-    "lng": 113.347674996305
-  },
-  {
-    "nama": "SMP LUBBUL LABIB",
-    "kec": "Maron",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.83016812978598,
-    "lng": 113.325972521431
-  },
-  {
-    "nama": "SMPN 3 MARON",
-    "kec": "Maron",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.80178387222825,
-    "lng": 113.351258323285
-  },
-  {
-    "nama": "SDN SELOGUDIG KULON",
-    "kec": "Pejarakan",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.8075224871662,
-    "lng": 113.370523009794
-  },
-  {
-    "nama": "SMPN 2 TEGALSIWALAN",
-    "kec": "Tegalsiwalan",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.86434367777208,
-    "lng": 113.278433438632
-  },
-  {
-    "nama": "SDN BAGO",
-    "kec": "Besuk",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.82981269547894,
-    "lng": 113.494350576852
-  },
-  {
-    "nama": "SDN KRAMPILAN",
-    "kec": "Besuk",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.77735821951399,
-    "lng": 113.453929436776
-  },
-  {
-    "nama": "SMPN 2 BESUK",
-    "kec": "Besuk",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.82745515913196,
-    "lng": 113.494673736777
-  },
-  {
-    "nama": "SMPN 1 GADING",
-    "kec": "Gading",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.84852492553616,
-    "lng": 113.421401323286
-  },
-  {
-    "nama": "SMPN 3 GADING",
-    "kec": "Gading",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.87716583335268,
-    "lng": 113.378433436778
-  },
-  {
-    "nama": "SDN PASEMBUN 1",
-    "kec": "Kotaanyar",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.7572,
-    "lng": 113.5614
-  },
-  {
-    "nama": "SMPN 1 KOTAANYAR",
-    "kec": "Kotaanyar",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.75377020041019,
-    "lng": 113.536957723284
-  },
-  {
-    "nama": "SDN SEMAMPIR 1",
-    "kec": "Kraksaan",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.76091575884202,
-    "lng": 113.409247379103
-  },
-  {
-    "nama": "SMP AL KAHAIRIYAH",
-    "kec": "Kraksaan",
-    "kat": "Sekolah",
-    "tim": "FAJAR",
-    "lat": -7.73147554063573,
-    "lng": 113.445890338077,
-    "color": "red"
-  },
-  {
-    "nama": "SMPN 1 KRAKSAAN",
-    "kec": "Kraksaan",
-    "kat": "Sekolah",
-    "tim": "FAJAR",
-    "lat": -7.76452436102902,
-    "lng": 113.424225480957,
-    "color": "red"
-  },
-  {
-    "nama": "SMPN 2 KRAKSAAN",
-    "kec": "Kraksaan",
-    "kat": "Sekolah",
-    "tim": "RIDHO",
-    "lat": -7.75890051883412,
-    "lng": 113.413754880957,
-    "color": "red"
-  },
-  {
-    "nama": "SMPN 3 KRAKSAAN",
-    "kec": "Kraksaan",
-    "kat": "Sekolah",
-    "tim": "RIDHO",
-    "lat": -7.76743531474915,
-    "lng": 113.460135696303,
-    "color": "red"
-  },
-  {
-    "nama": "SMPN 4 KRAKSAAN",
-    "kec": "Kraksaan",
-    "kat": "Sekolah",
-    "tim": "RIDHO",
-    "lat": -7.74467767997898,
-    "lng": 113.457030336775,
-    "color": "red"
-  },
-  {
-    "nama": "SMPN 2 KREJENGAN",
-    "kec": "Krejengan",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.77685423835757,
-    "lng": 113.425479552121
-  },
-  {
-    "nama": "SDN BETEK 2",
-    "kec": "Krucil",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.91703289342695,
-    "lng": 113.432842059797
-  },
-  {
-    "nama": "SDN BETEK 3",
-    "kec": "Krucil",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.88347282395996,
-    "lng": 113.401439438632
-  },
-  {
-    "nama": "SDN GUYANGAN",
-    "kec": "Krucil",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.92174110692489,
-    "lng": 113.454461023287
-  },
-  {
-    "nama": "SDN SENENG 1",
-    "kec": "Krucil",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.88835039130138,
-    "lng": 113.443183292596
-  },
-  {
-    "nama": "SMPN 1 KRUCIL",
-    "kec": "Krucil",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.93276836411801,
-    "lng": 113.455305465615
-  },
-  {
-    "nama": "SMPN 2 KRUCIL",
-    "kec": "Krucil",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.95111005255238,
-    "lng": 113.448652206088
-  },
-  {
-    "nama": "SMPN 1 PAITON",
-    "kec": "Paiton",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.72618056927413,
-    "lng": 113.508784592593
-  },
-  {
-    "nama": "SMPN 2 PAITON",
-    "kec": "Paiton",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.72786590163809,
-    "lng": 113.477268992593
-  },
-  {
-    "nama": "SDN GLAGAH 1",
-    "kec": "Pakuniran",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.76743950592718,
-    "lng": 113.508787092594
-  },
-  {
-    "nama": "SMPN 1 PAKUNIRAN",
-    "kec": "Pakuniran",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.79538796882169,
-    "lng": 113.528953679103
-  },
-  {
-    "nama": "SMPN 2 PAKUNIRAN",
-    "kec": "Pakuniran",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.76547949204808,
-    "lng": 113.502361323285
-  },
-  {
-    "nama": "SDN TLOGOSARI 2",
-    "kec": "Tiris",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.99502042375058,
-    "lng": 113.384903679107
-  },
-  {
-    "nama": "SMPN 1 TIRIS",
-    "kec": "Tiris",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.96866946303032,
-    "lng": 113.397105406089
-  },
-  {
-    "nama": "SMP NEGERI 1 BESUK",
-    "kec": "Besuk",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.785100,
-    "lng": 113.477100
-  },
-  {
-    "nama": "SMP NEGERI 1 KREJENGAN",
-    "kec": "Krejengan",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.791500,
-    "lng": 113.406600
-  },
-  {
-    "nama": "SD NEGERI KEDUNGSUMUR",
-    "kec": "Pakuniran",
-    "kat": "Sekolah",
-    "tim": "-",
-    "lat": -7.853800,
-    "lng": 113.518600
-  }
-];
-// ============================================================
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRM34np42xWfuf9eH8Cti25V03L-5y5ih51G_ZazqVEPEpaN769MAzwQiqBy8pWHQhgjTNjzSaujptU/pub?output=csv';
+let DATA = [];
+let activeMarkers = [];
+let activeKec = null;
 
+async function loadDataFromSheets() {
+  try {
+    const response = await fetch(SHEET_URL);
+    const csvText = await response.text();
+    
+    Papa.parse(csvText, {
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        DATA = results.data.map(row => ({
+          nama: row.Nama || "Tanpa Nama",
+          kec: row.Kecamatan || "Tidak Diketahui",
+          kat: row.Kategori || "Lainnya",
+          tim: row.Tim || "-",
+          // Antisipasi jika Excel regional Indonesia menggunakan format koma
+          lat: parseFloat(String(row.Lat).replace(',', '.')),
+          lng: parseFloat(String(row.Lng).replace(',', '.')),
+          // Ubah warna menjadi merah jika Status_Survey = "Sudah"
+          color: (row.Status_Survey && String(row.Status_Survey).trim().toLowerCase() === "sudah") ? "red" : null 
+        })).filter(row => !isNaN(row.lat) && !isNaN(row.lng)); // Buang data yang tidak punya koordinat valid
+
+        // Render UI setelah data siap
+        buildKecList('kec-list');
+        buildKecList('kec-list-mobile');
+        render(null, '');
+      }
+    });
+  } catch (error) {
+    console.error("Gagal memuat data dari Google Sheets:", error);
+  }
+}
+
+// ============================================================
+// KONFIGURASI ICON & PETA
+// ============================================================
 const COLORS = { "Sekolah":"#378ADD", "Penginapan":"#3B6D11", "Posko Tim":"#D85A30" };
 const BADGES = { "Sekolah":"badge-school", "Penginapan":"badge-nginap", "Posko Tim":"badge-posko" };
-
-// Nama warna Leaflet → hex
 const COLOR_MAP = {
   red:"#e74c3c", blue:"#378ADD", green:"#3B6D11", orange:"#e67e22",
   purple:"#8e44ad", darkred:"#922b21", darkblue:"#1a5276", darkgreen:"#1e8449",
-  cadetblue:"#2e86c1", pink:"#e91e8c", black:"#222", gray:"#888",
-  white:"#fff", darkpurple:"#6c3483", beige:"#d5a76b",
-  lightred:"#f1948a", lightblue:"#7fb3d3", lightgreen:"#82e0aa",
-  lightgray:"#bbb"
+  cadetblue:"#2e86c1", pink:"#e91e8c", black:"#222", gray:"#888", white:"#fff"
 };
 
 function pinIcon(kat, customColor) {
@@ -826,11 +272,9 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r
 // ── GeoJSON batas kecamatan ──
 const GEOJSON_URL = 'kecamatan.geojson';
 const KEC_COLORS = [
-  "#1a6fa8","#2e8b57","#c0392b","#8e44ad","#d35400",
-  "#16a085","#2980b9","#27ae60","#e74c3c","#9b59b6",
-  "#f39c12","#1abc9c","#e67e22","#3498db","#2ecc71",
-  "#e91e63","#00bcd4","#ff5722","#607d8b","#795548",
-  "#ff9800","#9c27b0","#4caf50","#f44336"
+  "#1a6fa8","#2e8b57","#c0392b","#8e44ad","#d35400","#16a085","#2980b9","#27ae60",
+  "#e74c3c","#9b59b6","#f39c12","#1abc9c","#e67e22","#3498db","#2ecc71","#e91e63",
+  "#00bcd4","#ff5722","#607d8b","#795548","#ff9800","#9c27b0","#4caf50","#f44336"
 ];
 
 let kecLayerGroup = L.layerGroup().addTo(map);
@@ -847,12 +291,8 @@ function drawBoundaries(highlightKec) {
     const color = KEC_COLORS[i % KEC_COLORS.length];
     const layer = L.geoJSON(f, {
       style: {
-        color: isH ? color : "#2d6aa0",
-        weight: isH ? 3 : 1.2,
-        opacity: isH ? 1 : 0.6,
-        fillColor: isH ? color : "#4a90d9",
-        fillOpacity: isH ? 0.20 : 0.04,
-        dashArray: isH ? null : "5 4"
+        color: isH ? color : "#2d6aa0", weight: isH ? 3 : 1.2, opacity: isH ? 1 : 0.6,
+        fillColor: isH ? color : "#4a90d9", fillOpacity: isH ? 0.20 : 0.04, dashArray: isH ? null : "5 4"
       }
     });
     layer.bindTooltip(nama, { permanent:false, sticky:true, className:'kec-tooltip', direction:'center' });
@@ -882,10 +322,7 @@ async function loadGeoJSON() {
 }
 loadGeoJSON();
 
-// ── Markers ──
-let activeMarkers = [];
-let activeKec = null;
-
+// ── RENDER MARKERS ──
 function popupHTML(d) {
   return `<div class="popup-card">
     <div class="popup-badge ${BADGES[d.kat]||'badge-posko'}">${d.kat}</div>
@@ -900,35 +337,42 @@ function render(filterKec, filterSearch) {
   activeMarkers.forEach(m => map.removeLayer(m));
   activeMarkers = [];
   let s=0,n=0,p=0;
+  
   DATA.forEach(d => {
     const matchKec = !filterKec || d.kec === filterKec;
     const q = (filterSearch||"").toLowerCase();
     const matchQ = !q || d.nama.toLowerCase().includes(q) || d.kec.toLowerCase().includes(q) || d.kat.toLowerCase().includes(q);
     if (!matchKec || !matchQ) return;
+    
+    // Icon memprioritaskan d.color yang didapat dari Google Sheets (misal "red")
     const m = L.marker([d.lat,d.lng], { icon: pinIcon(d.kat, d.color||null) })
       .addTo(map).bindPopup(popupHTML(d), { maxWidth:260 });
+      
     m.on('click', () => { if(window.innerWidth<=640) closeDrawer(); });
     activeMarkers.push(m);
-    if(d.kat==="Sekolah") s++;
-    if(d.kat==="Penginapan") n++;
-    if(d.kat==="Posko Tim") p++;
+    
+    if(d.kat.toLowerCase() === "sekolah") s++;
+    if(d.kat.toLowerCase() === "penginapan") n++;
+    if(d.kat.toLowerCase() === "posko tim") p++;
   });
+  
   document.getElementById('h-total').textContent = s+n+p;
   document.getElementById('h-school').textContent = s;
   document.getElementById('h-nginap').textContent = n;
   document.getElementById('h-posko').textContent  = p;
 }
 
-// ── Kecamatan list (desktop + mobile) ──
-const allKec   = [...new Set(DATA.map(d=>d.kec))].sort();
-const kecCount = {};
-DATA.forEach(d => kecCount[d.kec]=(kecCount[d.kec]||0)+1);
-
-function selectKec(kec, allBtns) {
+// ── KECAMATAN LIST BUILDER ──
+function selectKec(kec) {
   activeKec = kec;
-  allBtns.forEach(b => b.classList.remove('active'));
-  const target = allBtns.find(b => b.dataset.kec === (kec||'__all__'));
-  if(target) target.classList.add('active');
+  // Sinkronkan state active di semua tombol list desktop maupun mobile
+  document.querySelectorAll('.kec-btn').forEach(b => {
+    b.classList.remove('active');
+    if ((kec === null && b.dataset.kec === '__all__') || b.dataset.kec === kec) {
+      b.classList.add('active');
+    }
+  });
+  
   render(activeKec, getSearchVal());
   drawBoundaries(kec);
   if(kec) {
@@ -942,31 +386,32 @@ function selectKec(kec, allBtns) {
 
 function buildKecList(containerId) {
   const wrap = document.getElementById(containerId);
+  if(!wrap) return;
   wrap.innerHTML = '';
-  const allBtns = [];
+
+  // Kalkulasi unik kecamatan dan jumlahnya HANYA setelah DATA terisi
+  const allKec = [...new Set(DATA.map(d=>d.kec))].sort();
+  const kecCount = {};
+  DATA.forEach(d => kecCount[d.kec]=(kecCount[d.kec]||0)+1);
 
   const allBtn = document.createElement('button');
   allBtn.className = 'kec-btn active';
   allBtn.dataset.kec = '__all__';
-  allBtn.innerHTML = 'Semua Kecamatan<span class="kec-count">'+DATA.length+'</span>';
-  allBtn.onclick = () => selectKec(null, allBtns);
+  allBtn.innerHTML = `Semua Kecamatan<span class="kec-count">${DATA.length}</span>`;
+  allBtn.onclick = () => selectKec(null);
   wrap.appendChild(allBtn);
-  allBtns.push(allBtn);
 
   allKec.forEach(kec => {
     const btn = document.createElement('button');
     btn.className = 'kec-btn';
     btn.dataset.kec = kec;
-    btn.innerHTML = kec+'<span class="kec-count">'+(kecCount[kec]||0)+'</span>';
-    btn.onclick = () => selectKec(kec, allBtns);
+    btn.innerHTML = `${kec}<span class="kec-count">${kecCount[kec]||0}</span>`;
+    btn.onclick = () => selectKec(kec);
     wrap.appendChild(btn);
-    allBtns.push(btn);
   });
 }
-buildKecList('kec-list');
-buildKecList('kec-list-mobile');
 
-// ── Search ──
+// ── SEARCH ──
 function getSearchVal() {
   const d = document.getElementById('search-input');
   const m = document.getElementById('search-input-mobile');
@@ -975,7 +420,7 @@ function getSearchVal() {
 document.getElementById('search-input').addEventListener('input', e => render(activeKec, e.target.value));
 document.getElementById('search-input-mobile').addEventListener('input', e => render(activeKec, e.target.value));
 
-// ── Legenda toggle (desktop) ──
+// ── UI TOGGLES ──
 let legendOpen = false;
 function toggleLegend() {
   legendOpen = !legendOpen;
@@ -983,7 +428,6 @@ function toggleLegend() {
   document.getElementById('legend-arrow').className = 'legend-arrow' + (legendOpen ? ' open' : '');
 }
 
-// ── Legenda toggle (mobile drawer) ──
 let legendMobileOpen = false;
 function toggleLegendMobile() {
   legendMobileOpen = !legendMobileOpen;
@@ -991,7 +435,6 @@ function toggleLegendMobile() {
   document.getElementById('legend-arrow-mobile').style.transform = legendMobileOpen ? 'rotate(180deg)' : '';
 }
 
-// ── Mobile drawer ──
 function openDrawer() {
   document.getElementById('drawer').classList.add('open');
   document.getElementById('overlay').classList.add('show');
@@ -1003,15 +446,14 @@ function closeDrawer() {
   document.getElementById('fab-main').textContent = '☰';
 }
 
-// Swipe down to close drawer
 let touchStartY = 0;
 document.getElementById('drawer').addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, {passive:true});
 document.getElementById('drawer').addEventListener('touchend', e => {
   if(e.changedTouches[0].clientY - touchStartY > 60) closeDrawer();
 }, {passive:true});
 
-// Init
-render(null, '');
+// ── START APP ──
+loadDataFromSheets();
 </script>
 </body>
 </html>
