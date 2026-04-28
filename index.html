@@ -146,9 +146,8 @@
   </div>
   <div class="header-stats">
     <div class="hstat"><div class="hstat-num" id="h-total">0</div><div class="hstat-lbl">Total</div></div>
-    <div class="hstat"><div class="hstat-num" id="h-school" style="color:#7ec8f5">0</div><div class="hstat-lbl">Sekolah</div></div>
-    <div class="hstat"><div class="hstat-num" id="h-nginap" style="color:#7ecb99">0</div><div class="hstat-lbl">Nginap</div></div>
-    <div class="hstat"><div class="hstat-num" id="h-posko" style="color:#f5a87e">0</div><div class="hstat-lbl">Posko</div></div>
+    <div class="hstat"><div class="hstat-num" id="h-sudah" style="color:#7ec8f5">0</div><div class="hstat-lbl">Sudah</div></div>
+    <div class="hstat"><div class="hstat-num" id="h-belum" style="color:#f5a87e">0</div><div class="hstat-lbl">Belum</div></div>
   </div>
 </header>
 
@@ -391,7 +390,7 @@ function popupHTML(d) {
 function render(filterKec, filterTim, filterSearch) {
   activeMarkers.forEach(m => map.removeLayer(m));
   activeMarkers = [];
-  let s=0, n=0, p=0;
+  let s=0, n=0, p=0, sudah=0, belum=0;
 
   DATA.forEach(d => {
     const matchKec  = !filterKec  || d.kec === filterKec;
@@ -416,12 +415,12 @@ function render(filterKec, filterTim, filterSearch) {
     if(d.kat.toLowerCase() === "sekolah")    s++;
     if(d.kat.toLowerCase() === "penginapan") n++;
     if(d.kat.toLowerCase() === "posko tim")  p++;
+    if(d.color === 'red') sudah++; else belum++;
   });
 
   document.getElementById('h-total').textContent  = s+n+p;
-  document.getElementById('h-school').textContent = s;
-  document.getElementById('h-nginap').textContent = n;
-  document.getElementById('h-posko').textContent  = p;
+  document.getElementById('h-sudah').textContent  = sudah;
+  document.getElementById('h-belum').textContent  = belum;
 }
 
 // ── BUILD TIM LIST ── (BARU)
