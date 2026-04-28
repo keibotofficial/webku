@@ -53,15 +53,23 @@
   .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #444; padding: 3px 0; }
   .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
 
-  /* Kecamatan filter */
-  .kec-btn {
+  /* Filter buttons shared style */
+  .filter-btn {
     display: block; width: 100%; text-align: left; font-size: 12px; color: #333; background: transparent;
     border: 1px solid #e5e5e5; border-radius: 6px; padding: 6px 10px; cursor: pointer; margin-bottom: 4px; transition: all 0.15s;
   }
-  .kec-btn:hover { background: #f0f6ff; border-color: #b3d0f5; }
-  .kec-btn.active { background: #e6f1fb; color: #185FA5; border-color: #378ADD; font-weight: 600; }
-  .kec-count { float: right; background: #f0f0f0; border-radius: 10px; padding: 1px 7px; font-size: 11px; color: #666; }
-  .kec-btn.active .kec-count { background: #b5d4f4; color: #185FA5; }
+  .filter-btn:hover { background: #f0f6ff; border-color: #b3d0f5; }
+  .filter-btn.active { background: #e6f1fb; color: #185FA5; border-color: #378ADD; font-weight: 600; }
+  .filter-count { float: right; background: #f0f0f0; border-radius: 10px; padding: 1px 7px; font-size: 11px; color: #666; }
+  .filter-btn.active .filter-count { background: #b5d4f4; color: #185FA5; }
+
+  /* Tim filter — accent warna berbeda */
+  .tim-btn { display: block; width: 100%; text-align: left; font-size: 12px; color: #333; background: transparent;
+    border: 1px solid #e5e5e5; border-radius: 6px; padding: 6px 10px; cursor: pointer; margin-bottom: 4px; transition: all 0.15s; }
+  .tim-btn:hover { background: #f5f0ff; border-color: #c9b3f5; }
+  .tim-btn.active { background: #ede6fb; color: #5b2fa0; border-color: #8e44ad; font-weight: 600; }
+  .tim-count { float: right; background: #f0f0f0; border-radius: 10px; padding: 1px 7px; font-size: 11px; color: #666; }
+  .tim-btn.active .tim-count { background: #d4b5f4; color: #5b2fa0; }
 
   /* ── MAP ── */
   #map { flex: 1; z-index: 1; }
@@ -76,6 +84,10 @@
   .popup-title { font-size: 13px; font-weight: 700; color: #111; margin-bottom: 5px; }
   .popup-row { font-size: 12px; color: #555; margin-bottom: 3px; }
   .popup-row b { color: #333; }
+  .popup-tim-badge {
+    display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 20px;
+    font-weight: 600; background: #ede6fb; color: #5b2fa0; margin-top: 4px;
+  }
 
   /* ── BOTTOM BAR desktop ── */
   #bottom-bar { background: white; border-top: 1px solid #e5e5e5; padding: 6px 16px; font-size: 11px; color: #888; flex-shrink: 0; }
@@ -101,6 +113,15 @@
   /* Overlay */
   #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 1800; }
   #overlay.show { display: block; }
+
+  /* Active filter pill di header map */
+  #active-filter-pill {
+    display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    z-index: 800; background: #5b2fa0; color: white; border-radius: 20px;
+    padding: 5px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25); white-space: nowrap;
+  }
+  #active-filter-pill.show { display: block; }
 
   /* ── RESPONSIVE ── */
   @media (max-width: 640px) {
@@ -151,11 +172,20 @@
       </div>
     </div>
 
+    <!-- ── FILTER TIM (BARU) ── -->
+    <div class="sidebar-section">
+      <h3>Filter Tim</h3>
+      <div id="tim-list"></div>
+    </div>
+
     <div class="sidebar-section" style="flex:1">
       <h3>Filter Kecamatan</h3>
       <div id="kec-list"></div>
     </div>
   </div>
+
+  <!-- Pill aktif filter tim di atas peta -->
+  <div id="active-filter-pill" onclick="selectTim(null)">✕ Tim: <span id="pill-label"></span></div>
 
   <div id="map"></div>
 </div>
@@ -194,6 +224,12 @@
       </div>
     </div>
 
+    <!-- ── FILTER TIM MOBILE (BARU) ── -->
+    <div style="margin-bottom:12px">
+      <p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:#888;margin-bottom:8px">Filter Tim</p>
+      <div id="tim-list-mobile"></div>
+    </div>
+
     <p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:#888;margin-bottom:8px">Filter Kecamatan</p>
     <div id="kec-list-mobile"></div>
   </div>
@@ -207,12 +243,12 @@ const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRM34np42xWfu
 let DATA = [];
 let activeMarkers = [];
 let activeKec = null;
+let activeTim = null; // ← STATE BARU: filter tim aktif
 
 async function loadDataFromSheets() {
   try {
     const response = await fetch(SHEET_URL);
     const csvText = await response.text();
-    
     Papa.parse(csvText, {
       header: true,
       dynamicTyping: true,
@@ -220,20 +256,19 @@ async function loadDataFromSheets() {
       complete: function(results) {
         DATA = results.data.map(row => ({
           nama: row.Nama || "Tanpa Nama",
-          kec: row.Kecamatan || "Tidak Diketahui",
-          kat: row.Kategori || "Lainnya",
-          tim: row.Tim || "-",
-          // Antisipasi jika Excel regional Indonesia menggunakan format koma
-          lat: parseFloat(String(row.Lat).replace(',', '.')),
-          lng: parseFloat(String(row.Lng).replace(',', '.')),
-          // Ubah warna menjadi merah jika Status_Survey = "Sudah"
-          color: (row.Status_Survey && String(row.Status_Survey).trim().toLowerCase() === "sudah") ? "red" : null 
-        })).filter(row => !isNaN(row.lat) && !isNaN(row.lng)); // Buang data yang tidak punya koordinat valid
+          kec:  row.Kecamatan || "Tidak Diketahui",
+          kat:  row.Kategori || "Lainnya",
+          tim:  (row.Tim && String(row.Tim).trim()) ? String(row.Tim).trim() : "-",
+          lat:  parseFloat(String(row.Lat).replace(',', '.')),
+          lng:  parseFloat(String(row.Lng).replace(',', '.')),
+          color: (row.Status_Survey && String(row.Status_Survey).trim().toLowerCase() === "sudah") ? "red" : null
+        })).filter(row => !isNaN(row.lat) && !isNaN(row.lng));
 
-        // Render UI setelah data siap
         buildKecList('kec-list');
         buildKecList('kec-list-mobile');
-        render(null, '');
+        buildTimList('tim-list');       // ← BARU
+        buildTimList('tim-list-mobile'); // ← BARU
+        render(null, null, '');
       }
     });
   } catch (error) {
@@ -242,7 +277,7 @@ async function loadDataFromSheets() {
 }
 
 // ============================================================
-// KONFIGURASI ICON & PETA
+// ICON & PETA
 // ============================================================
 const COLORS = { "Sekolah":"#378ADD", "Penginapan":"#3B6D11", "Posko Tim":"#D85A30" };
 const BADGES = { "Sekolah":"badge-school", "Penginapan":"badge-nginap", "Posko Tim":"badge-posko" };
@@ -251,6 +286,23 @@ const COLOR_MAP = {
   purple:"#8e44ad", darkred:"#922b21", darkblue:"#1a5276", darkgreen:"#1e8449",
   cadetblue:"#2e86c1", pink:"#e91e8c", black:"#222", gray:"#888", white:"#fff"
 };
+
+// Palet warna untuk tim (agar tiap tim punya warna marker unik)
+const TIM_COLORS = [
+  "#8e44ad","#2980b9","#16a085","#d35400","#c0392b",
+  "#27ae60","#f39c12","#2c3e50","#e91e63","#00bcd4",
+  "#ff5722","#607d8b","#795548","#ff9800","#9c27b0"
+];
+let timColorMap = {}; // { "JAKI": "#8e44ad", ... }
+
+function getTimColor(tim) {
+  if (!tim || tim === '-') return null;
+  if (!timColorMap[tim]) {
+    const keys = Object.keys(timColorMap).length;
+    timColorMap[tim] = TIM_COLORS[keys % TIM_COLORS.length];
+  }
+  return timColorMap[tim];
+}
 
 function pinIcon(kat, customColor) {
   const c = (customColor && COLOR_MAP[customColor]) || customColor || COLORS[kat] || "#888";
@@ -276,7 +328,6 @@ const KEC_COLORS = [
   "#e74c3c","#9b59b6","#f39c12","#1abc9c","#e67e22","#3498db","#2ecc71","#e91e63",
   "#00bcd4","#ff5722","#607d8b","#795548","#ff9800","#9c27b0","#4caf50","#f44336"
 ];
-
 let kecLayerGroup = L.layerGroup().addTo(map);
 let kecLayers = {};
 let KEC_GEOJSON = null;
@@ -322,90 +373,162 @@ async function loadGeoJSON() {
 }
 loadGeoJSON();
 
-// ── RENDER MARKERS ──
+// ── RENDER MARKERS ── (sekarang terima filterTim juga)
 function popupHTML(d) {
+  const timBadge = d.tim && d.tim !== '-'
+    ? `<div><span class="popup-tim-badge">👥 Tim: ${d.tim}</span></div>`
+    : '';
   return `<div class="popup-card">
     <div class="popup-badge ${BADGES[d.kat]||'badge-posko'}">${d.kat}</div>
     <div class="popup-title">${d.nama}</div>
     <div class="popup-row"><b>Kecamatan:</b> ${d.kec}</div>
     <div class="popup-row"><b>Info Tim:</b> ${d.tim}</div>
+    ${timBadge}
     <div class="popup-row" style="margin-top:5px;color:#999;font-size:11px">${d.lat.toFixed(5)}, ${d.lng.toFixed(5)}</div>
   </div>`;
 }
 
-function render(filterKec, filterSearch) {
+function render(filterKec, filterTim, filterSearch) {
   activeMarkers.forEach(m => map.removeLayer(m));
   activeMarkers = [];
-  let s=0,n=0,p=0;
-  
+  let s=0, n=0, p=0;
+
   DATA.forEach(d => {
-    const matchKec = !filterKec || d.kec === filterKec;
+    const matchKec  = !filterKec  || d.kec === filterKec;
+    const matchTim  = !filterTim  || d.tim === filterTim; // ← FILTER TIM
     const q = (filterSearch||"").toLowerCase();
-    const matchQ = !q || d.nama.toLowerCase().includes(q) || d.kec.toLowerCase().includes(q) || d.kat.toLowerCase().includes(q);
-    if (!matchKec || !matchQ) return;
-    
-    // Icon memprioritaskan d.color yang didapat dari Google Sheets (misal "red")
-    const m = L.marker([d.lat,d.lng], { icon: pinIcon(d.kat, d.color||null) })
+    const matchQ = !q || d.nama.toLowerCase().includes(q) || d.kec.toLowerCase().includes(q) || d.kat.toLowerCase().includes(q) || d.tim.toLowerCase().includes(q);
+    if (!matchKec || !matchTim || !matchQ) return;
+
+    // Warna: prioritas status survey "sudah" → merah, lalu warna per-tim jika filter aktif, lalu default kategori
+    let iconColor = null;
+    if (d.color === 'red') {
+      iconColor = 'red';
+    } else if (filterTim) {
+      iconColor = getTimColor(d.tim);
+    }
+
+    const m = L.marker([d.lat, d.lng], { icon: pinIcon(d.kat, iconColor) })
       .addTo(map).bindPopup(popupHTML(d), { maxWidth:260 });
-      
     m.on('click', () => { if(window.innerWidth<=640) closeDrawer(); });
     activeMarkers.push(m);
-    
-    if(d.kat.toLowerCase() === "sekolah") s++;
+
+    if(d.kat.toLowerCase() === "sekolah")    s++;
     if(d.kat.toLowerCase() === "penginapan") n++;
-    if(d.kat.toLowerCase() === "posko tim") p++;
+    if(d.kat.toLowerCase() === "posko tim")  p++;
   });
-  
-  document.getElementById('h-total').textContent = s+n+p;
+
+  document.getElementById('h-total').textContent  = s+n+p;
   document.getElementById('h-school').textContent = s;
   document.getElementById('h-nginap').textContent = n;
   document.getElementById('h-posko').textContent  = p;
 }
 
-// ── KECAMATAN LIST BUILDER ──
-function selectKec(kec) {
-  activeKec = kec;
-  // Sinkronkan state active di semua tombol list desktop maupun mobile
-  document.querySelectorAll('.kec-btn').forEach(b => {
+// ── BUILD TIM LIST ── (BARU)
+function buildTimList(containerId) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  wrap.innerHTML = '';
+
+  // Kumpulkan tim unik, exclude "-"
+  const timSet = [...new Set(DATA.map(d => d.tim).filter(t => t && t !== '-'))].sort();
+  const timCount = {};
+  DATA.forEach(d => { if (d.tim && d.tim !== '-') timCount[d.tim] = (timCount[d.tim]||0) + 1; });
+
+  // Tombol "Semua Tim"
+  const allBtn = document.createElement('button');
+  allBtn.className = 'tim-btn active';
+  allBtn.dataset.tim = '__all__';
+  allBtn.innerHTML = `Semua Tim <span class="tim-count">${DATA.length}</span>`;
+  allBtn.onclick = () => selectTim(null);
+  wrap.appendChild(allBtn);
+
+  timSet.forEach(tim => {
+    const btn = document.createElement('button');
+    btn.className = 'tim-btn';
+    btn.dataset.tim = tim;
+    const dotColor = getTimColor(tim);
+    btn.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};margin-right:6px;vertical-align:middle"></span>${tim}<span class="tim-count">${timCount[tim]||0}</span>`;
+    btn.onclick = () => selectTim(tim);
+    wrap.appendChild(btn);
+  });
+}
+
+// ── SELECT TIM ── (BARU)
+function selectTim(tim) {
+  activeTim = tim;
+
+  // Update state tombol di semua list
+  document.querySelectorAll('.tim-btn').forEach(b => {
     b.classList.remove('active');
-    if ((kec === null && b.dataset.kec === '__all__') || b.dataset.kec === kec) {
+    if ((tim === null && b.dataset.tim === '__all__') || b.dataset.tim === tim) {
       b.classList.add('active');
     }
   });
-  
-  render(activeKec, getSearchVal());
-  drawBoundaries(kec);
-  if(kec) {
-    const pts = DATA.filter(d=>d.kec===kec);
-    if(pts.length) map.flyTo([pts[0].lat,pts[0].lng], 13, {duration:1});
+
+  // Update pill di atas peta
+  const pill = document.getElementById('active-filter-pill');
+  if (tim) {
+    document.getElementById('pill-label').textContent = tim;
+    pill.classList.add('show');
   } else {
-    map.flyTo([-7.838,113.307], 10, {duration:1});
+    pill.classList.remove('show');
   }
-  if(window.innerWidth<=640) closeDrawer();
+
+  render(activeKec, activeTim, getSearchVal());
+
+  // Zoom ke titik-titik tim tersebut
+  if (tim) {
+    const pts = DATA.filter(d => d.tim === tim);
+    if (pts.length) {
+      const bounds = L.latLngBounds(pts.map(d => [d.lat, d.lng]));
+      map.flyToBounds(bounds, { padding:[40,40], maxZoom:13, duration:1 });
+    }
+  } else {
+    map.flyTo([-7.838, 113.307], 10, { duration:1 });
+  }
+
+  if (window.innerWidth <= 640) closeDrawer();
+}
+
+// ── BUILD KEC LIST ──
+function selectKec(kec) {
+  activeKec = kec;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.remove('active');
+    if ((kec === null && b.dataset.kec === '__all__') || b.dataset.kec === kec) b.classList.add('active');
+  });
+  render(activeKec, activeTim, getSearchVal());
+  drawBoundaries(kec);
+  if (kec) {
+    const pts = DATA.filter(d => d.kec === kec);
+    if (pts.length) map.flyTo([pts[0].lat, pts[0].lng], 13, {duration:1});
+  } else {
+    map.flyTo([-7.838, 113.307], 10, {duration:1});
+  }
+  if (window.innerWidth <= 640) closeDrawer();
 }
 
 function buildKecList(containerId) {
   const wrap = document.getElementById(containerId);
-  if(!wrap) return;
+  if (!wrap) return;
   wrap.innerHTML = '';
-
-  // Kalkulasi unik kecamatan dan jumlahnya HANYA setelah DATA terisi
   const allKec = [...new Set(DATA.map(d=>d.kec))].sort();
   const kecCount = {};
-  DATA.forEach(d => kecCount[d.kec]=(kecCount[d.kec]||0)+1);
+  DATA.forEach(d => kecCount[d.kec] = (kecCount[d.kec]||0)+1);
 
   const allBtn = document.createElement('button');
-  allBtn.className = 'kec-btn active';
+  allBtn.className = 'filter-btn active';
   allBtn.dataset.kec = '__all__';
-  allBtn.innerHTML = `Semua Kecamatan<span class="kec-count">${DATA.length}</span>`;
+  allBtn.innerHTML = `Semua Kecamatan<span class="filter-count">${DATA.length}</span>`;
   allBtn.onclick = () => selectKec(null);
   wrap.appendChild(allBtn);
 
   allKec.forEach(kec => {
     const btn = document.createElement('button');
-    btn.className = 'kec-btn';
+    btn.className = 'filter-btn';
     btn.dataset.kec = kec;
-    btn.innerHTML = `${kec}<span class="kec-count">${kecCount[kec]||0}</span>`;
+    btn.innerHTML = `${kec}<span class="filter-count">${kecCount[kec]||0}</span>`;
     btn.onclick = () => selectKec(kec);
     wrap.appendChild(btn);
   });
@@ -415,10 +538,10 @@ function buildKecList(containerId) {
 function getSearchVal() {
   const d = document.getElementById('search-input');
   const m = document.getElementById('search-input-mobile');
-  return (window.innerWidth<=640 ? m : d).value;
+  return (window.innerWidth <= 640 ? m : d).value;
 }
-document.getElementById('search-input').addEventListener('input', e => render(activeKec, e.target.value));
-document.getElementById('search-input-mobile').addEventListener('input', e => render(activeKec, e.target.value));
+document.getElementById('search-input').addEventListener('input', e => render(activeKec, activeTim, e.target.value));
+document.getElementById('search-input-mobile').addEventListener('input', e => render(activeKec, activeTim, e.target.value));
 
 // ── UI TOGGLES ──
 let legendOpen = false;
@@ -449,7 +572,7 @@ function closeDrawer() {
 let touchStartY = 0;
 document.getElementById('drawer').addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, {passive:true});
 document.getElementById('drawer').addEventListener('touchend', e => {
-  if(e.changedTouches[0].clientY - touchStartY > 60) closeDrawer();
+  if (e.changedTouches[0].clientY - touchStartY > 60) closeDrawer();
 }, {passive:true});
 
 // ── START APP ──
