@@ -135,6 +135,60 @@
     #fab-menu { display: flex; }
     #drawer { display: flex; }
   }
+  /* Style untuk area Check-in di Header */
+  .header-checkin {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    border-right: 1px solid rgba(255,255,255,0.2);
+    padding-right: 15px;
+    margin-right: auto; /* Mendorong stats ke kanan */
+    margin-left: 20px;
+  }
+
+  #team-selector {
+    padding: 6px 10px;
+    border-radius: 5px;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+    outline: none;
+    cursor: pointer;
+  }
+
+  #btn-checkin {
+    padding: 6px 12px;
+    border-radius: 5px;
+    border: none;
+    background: #e74c3c; /* Warna merah */
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  #btn-checkin:hover { background: #c0392b; }
+  #btn-checkin:disabled { background: #95a5a6; cursor: not-allowed; }
+
+  /* Penyesuaian Responsif untuk Layar HP */
+  @media (max-width: 800px) {
+    header { flex-wrap: wrap; }
+    .header-checkin {
+      order: 3; /* Memindahkannya ke baris bawah saat di HP */
+      width: 100%;
+      margin: 10px 0 0 0;
+      padding: 10px 0 0 0;
+      border-right: none;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      justify-content: center;
+    }
+    .header-stats { margin-left: auto; }
+  }
 </style>
 </head>
 <body>
@@ -143,6 +197,21 @@
   <div class="header-left">
     <h1>Peta Distribusi Tim & Lokasi</h1>
     <p>Kabupaten Probolinggo — Tim Lapangan</p>
+  </div>
+
+  <div class="header-checkin">
+    <select id="team-selector">
+      <option value="" disabled selected>Pilih Tim Anda...</option>
+      <option value="DENI">Tim DENI</option>
+      <option value="FAJAR">Tim FAJAR</option>
+      <option value="JAKI">Tim JAKI</option>
+      <option value="RIDHO">Tim RIDHO</option>
+      <option value="RIDHO">Tim HAQY</option>
+      <option value="RIDHO">Tim HAKIM</option>
+      <option value="RIDHO">Tim ANGGA</option>
+      <option value="RIDHO">Tim IRSYAD</option>
+    </select>
+    <button id="btn-checkin" onclick="laporPosisi()">📍 Lapor Posisi</button>
   </div>
   <div class="header-stats">
     <div class="hstat"><div class="hstat-num" id="h-total">0</div><div class="hstat-lbl">Total Sekolah</div></div>
@@ -576,6 +645,174 @@ document.getElementById('drawer').addEventListener('touchend', e => {
 
 // ── START APP ──
 loadDataFromSheets();
+
+// ── FUNGSI CHECK-IN LOKASI ──
+
+// Masukkan URL Aplikasi Web dari Google Apps Script di sini:
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbys-wrxEPJBC0WAYZH8BqzYmcMQzXGRSy6ojUkj7_0M5FEhiRzHUAW_WizXlufX-d-HUw/exec';
+
+function laporPosisi() {
+  const team = document.getElementById('team-selector').value;
+  const btn = document.getElementById('btn-checkin');
+
+  if (!team) {
+    alert('⚠️ Silakan pilih nama tim Anda di header terlebih dahulu!');
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    alert('⚠️ Browser/HP Anda tidak mendukung fitur lokasi GPS.');
+    return;
+  }
+
+  btn.innerHTML = '⏳ Mengirim...';
+  btn.disabled = true;
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+
+      // Data yang akan dikirim ke Sheets
+      const dataKirim = { tim: team, lat: lat, lng: lng };
+
+      // Proses kirim data ke Google Apps Script
+      fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify(dataKirim),
+        // Gunakan text/plain agar tidak diblokir oleh keamanan browser (CORS)
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
+      })
+      .then(response => response.json())
+      .then(result => {
+        if (result.status === "success") {
+          alert(`✅ Sukses! Posisi Tim ${team} telah dikirim ke Posko Utama.`);
+          
+          // --- TAMBAHAN BARU: MUNCULKAN TITIK DI PETA LOKAL ---
+          
+          // 1. Buat icon khusus berbentuk titik berdenyut atau lingkaran warna
+          const userIcon = L.divIcon({
+            className: 'custom-user-icon',
+            html: `<div style="background-color:#e74c3c; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.6);"></div>`,
+            iconSize: [16, 16],
+            iconAnchor: [8, 8]
+          });
+
+          // 2. Hapus marker posisi lama di layar HP ini (jika sebelumnya sudah pernah lapor)
+          if (window.myPositionMarker) {
+            map.removeLayer(window.myPositionMarker);
+          }
+
+          // 3. Tambahkan marker posisi baru ke peta
+          window.myPositionMarker = L.marker([lat, lng], {icon: userIcon})
+            .addTo(map)
+            .bindPopup(`<b>📍 Posisi Saat Ini</b><br>Tim ${team}`)
+            .openPopup();
+
+          // 4. Geser peta agar otomatis fokus ke posisi tersebut
+          map.setView([lat, lng], 14); // Angka 14 adalah level zoom
+          
+          // ----------------------------------------------------
+
+        } else {
+          alert('❌ Gagal menyimpan data di sistem. Coba lagi nanti.');
+        }
+        btn.innerHTML = '📍 Lapor Posisi';
+        btn.disabled = false;
+      })
+    },
+    (error) => {
+      alert('❌ Gagal mengambil lokasi. Pastikan GPS menyala dan izin lokasi diizinkan di browser.');
+      btn.innerHTML = '📍 Lapor Posisi';
+      btn.disabled = false;
+    },
+    { enableHighAccuracy: true, timeout: 15000 }
+  );
+}
+
+// ============================================================
+// FITUR RADAR PENGAWAS (MEMBACA LOG POSISI)
+// ============================================================
+
+// Masukkan link CSV khusus untuk tab "Log_Posisi" di bawah ini:
+const LOG_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRM34np42xWfuf9eH8Cti25V03L-5y5ih51G_ZazqVEPEpaN769MAzwQiqBy8pWHQhgjTNjzSaujptU/pub?gid=890518645&single=true&output=csv';
+
+let teamMarkers = []; // Menyimpan marker tim agar bisa dihapus/diupdate
+
+async function loadTeamLocations() {
+  if (!LOG_URL || LOG_URL.includes('TARUH_LINK')) return;
+
+  try {
+    const response = await fetch(LOG_URL);
+    const csvText = await response.text();
+    
+    Papa.parse(csvText, {
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        
+        // 1. Bersihkan marker tim lama di peta sebelum menggambar yang baru
+        teamMarkers.forEach(m => map.removeLayer(m));
+        teamMarkers = [];
+
+        // 2. Saring data untuk mencari POSISI TERAKHIR setiap tim
+        const posisiTerakhir = {};
+        results.data.forEach(row => {
+          if (row.Tim && row.Lat && row.Lng) {
+            // Karena data di Sheets bertambah ke bawah, baris terbawah otomatis menimpa baris lama
+            let lat = parseFloat(String(row.Lat).replace(',', '.'));
+            let lng = parseFloat(String(row.Lng).replace(',', '.'));
+            
+            if (!isNaN(lat) && !isNaN(lng)) {
+              posisiTerakhir[row.Tim] = {
+                waktu: row.Waktu,
+                lat: lat,
+                lng: lng
+              };
+            }
+          }
+        });
+
+        // 3. Gambar marker posisi tim di peta
+        Object.keys(posisiTerakhir).forEach(namaTim => {
+          const pos = posisiTerakhir[namaTim];
+          
+          // Buat desain icon bulat spesial untuk tim lapangan (Warna Biru Tua + Teks Kuning)
+          const inisial = namaTim.substring(0, 2).toUpperCase();
+          const tIcon = L.divIcon({
+            className: 'team-tracker-icon',
+            html: `<div style="background:#2c3e50; color:#f1c40f; border:2px solid #fff; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:bold; box-shadow:0 3px 6px rgba(0,0,0,0.6); z-index:1000;">${inisial}</div>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+            popupAnchor: [0, -15]
+          });
+
+          // Tempatkan marker di peta. zIndexOffset memastikan icon tim selalu berada di atas icon sekolah
+          const m = L.marker([pos.lat, pos.lng], {icon: tIcon, zIndexOffset: 1000})
+            .bindPopup(`
+              <div style="font-family:'Segoe UI',sans-serif; text-align:center;">
+                <b style="font-size:14px; color:#2c3e50;">🚙 Tim ${namaTim}</b><br>
+                <span style="font-size:11px; color:#888;">Update Terakhir:</span><br>
+                <span style="font-size:12px; font-weight:600; color:#e74c3c;">${pos.waktu}</span>
+              </div>
+            `);
+            
+          m.addTo(map);
+          teamMarkers.push(m);
+        });
+      }
+    });
+  } catch (error) {
+    console.error("Gagal memuat data log posisi tim:", error);
+  }
+}
+
+// 4. Panggil fungsinya saat web pertama kali dibuka
+loadTeamLocations();
+
+// 5. AUTO-REFRESH: Tarik data terbaru secara otomatis setiap 5 menit (300.000 milidetik)
+setInterval(loadTeamLocations, 300000);
 </script>
 </body>
 </html>
